@@ -19,10 +19,13 @@ import java.util.concurrent.Executors
  * own WhatsApp account that patients message. It is not meant to be
  * installed on a patient's personal phone — see README "Consent & scope".
  *
- * Limitation: Android truncates long notification text, and this never
- * sees media (images/voice notes) — only the text WhatsApp puts in the
- * notification banner. Good enough for a symptom-description chat; call
- * this out as "mocked" for anything beyond that.
+ * Limitation: Android truncates long notification text, and this never sees
+ * the actual bytes of media (images/voice notes) — only whatever short text
+ * WhatsApp puts in the notification banner (e.g. "🎤" for a voice note, or
+ * "Photo" for an uncaptioned image). Rather than silently forwarding that
+ * placeholder as if it were the patient's message, isUnreadableMedia() flags
+ * it so the doctor sees "patient sent media we can't read" instead of a
+ * confusing emoji in the transcript.
  */
 class WhatsAppNotificationListener : NotificationListenerService() {
 
@@ -38,6 +41,18 @@ class WhatsAppNotificationListener : NotificationListenerService() {
         // this window rather than forwarding the same patient message twice.
         private const val DEDUP_WINDOW_MS = 3000L
         private val recentlySeen = mutableMapOf<String, Long>()
+
+        private val MEDIA_PLACEHOLDER_WORDS = setOf(
+            "photo", "video", "voice message", "audio", "gif", "sticker", "document", "image",
+            "contact card",
+        )
+
+        private fun isUnreadableMedia(text: String): Boolean {
+            // An emoji-only banner (no letters/digits at all) is WhatsApp's
+            // media icon, not a written message.
+            if (text.none { it.isLetterOrDigit() }) return true
+            return text.trim().lowercase() in MEDIA_PLACEHOLDER_WORDS
+        }
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
@@ -45,12 +60,19 @@ class WhatsAppNotificationListener : NotificationListenerService() {
 
         val extras = sbn.notification.extras
         val title = extras.getCharSequence("android.title")?.toString()?.trim()
-        val text = extras.getCharSequence("android.text")?.toString()?.trim()
+        val rawText = extras.getCharSequence("android.text")?.toString()?.trim()
 
-        if (title.isNullOrEmpty() || text.isNullOrEmpty()) return
+        if (title.isNullOrEmpty() || rawText.isNullOrEmpty()) return
         // WhatsApp's own "message sent" / summary notifications have no useful title/text pair;
         // skip anything that looks like a group summary line with no real sender.
         if (title == "WhatsApp") return
+
+        val text = if (isUnreadableMedia(rawText)) {
+            "[Patient sent a photo, voice note, or other attachment this app can't read " +
+                "— ask them to describe it in a text message.]"
+        } else {
+            rawText
+        }
 
         val key = "$title|$text"
         val now = System.currentTimeMillis()

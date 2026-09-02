@@ -3,6 +3,8 @@ package com.kabladaktari.intake
 import android.content.Intent
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.LinearLayout
@@ -21,6 +23,11 @@ class SessionsActivity : AppCompatActivity() {
     private lateinit var progress: ProgressBar
     private var otherExpanded = false
     private var otherCount = 0
+
+    private val coldStartHandler = Handler(Looper.getMainLooper())
+    private val coldStartHint = Runnable {
+        status.text = "Waking up the backend — free-tier can take up to 50s if it's been idle…"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,7 +65,9 @@ class SessionsActivity : AppCompatActivity() {
         status.text = ""
         medicalContainer.removeAllViews()
         otherContainer.removeAllViews()
+        coldStartHandler.postDelayed(coldStartHint, 5000)
         BackendApi.fetchSessions(this) { sessions, error ->
+            coldStartHandler.removeCallbacks(coldStartHint)
             progress.visibility = View.GONE
             if (sessions == null) {
                 status.text = "Failed to load: ${error ?: "unknown error"}"
@@ -69,7 +78,10 @@ class SessionsActivity : AppCompatActivity() {
                 return@fetchSessions
             }
 
-            val (medical, other) = sessions.partition { it.isMedical == true }
+            // Urgent cases first — this is a triage list, not a chat inbox.
+            val (medical, other) = sessions
+                .sortedByDescending { it.urgent == true }
+                .partition { it.isMedical == true }
 
             if (medical.isEmpty()) {
                 status.text = "No patient conversations detected yet."
@@ -81,6 +93,11 @@ class SessionsActivity : AppCompatActivity() {
             otherToggle.visibility = if (otherCount > 0) View.VISIBLE else View.GONE
             renderOtherToggle()
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        coldStartHandler.removeCallbacks(coldStartHint)
     }
 
     private fun renderOtherToggle() {

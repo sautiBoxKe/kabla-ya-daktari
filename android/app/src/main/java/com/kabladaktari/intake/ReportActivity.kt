@@ -2,6 +2,8 @@ package com.kabladaktari.intake
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
@@ -35,6 +37,11 @@ class ReportActivity : AppCompatActivity() {
     private lateinit var shareButton: Button
     private lateinit var sharePdfButton: Button
 
+    private val coldStartHandler = Handler(Looper.getMainLooper())
+    private val coldStartHint = Runnable {
+        status.text = "Waking up the backend — free-tier can take up to 50s if it's been idle…"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_report)
@@ -61,7 +68,9 @@ class ReportActivity : AppCompatActivity() {
         generateButton.setOnClickListener {
             setLoading(true)
             status.text = "Generating report…"
+            coldStartHandler.postDelayed(coldStartHint, 5000)
             BackendApi.generateReport(this, phone) { report, error ->
+                coldStartHandler.removeCallbacks(coldStartHint)
                 setLoading(false)
                 if (report != null) {
                     render(report)
@@ -86,7 +95,9 @@ class ReportActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.clearButton).setOnClickListener { confirmClear() }
 
         setLoading(true)
+        coldStartHandler.postDelayed(coldStartHint, 5000)
         BackendApi.fetchReport(this, phone) { report, error ->
+            coldStartHandler.removeCallbacks(coldStartHint)
             setLoading(false)
             if (report != null) {
                 render(report)
@@ -94,6 +105,11 @@ class ReportActivity : AppCompatActivity() {
                 status.text = "No report yet — tap 'Generate / refresh report'."
             }
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        coldStartHandler.removeCallbacks(coldStartHint)
     }
 
     private fun setLoading(loading: Boolean) {
