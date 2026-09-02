@@ -6,15 +6,19 @@ import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.snackbar.Snackbar
+import java.io.File
 
 /**
  * Doctor's view of one patient's pre-consult report: load whatever's already
  * generated, let the doctor (re)generate it, and hand off a draft message to
  * WhatsApp's own share sheet — the doctor reviews/edits there before sending,
- * this app never sends to the patient directly.
+ * this app never sends to the patient directly. Also offers a short PDF
+ * export, and a way to wipe this patient's data once it's no longer needed.
  */
 class ReportActivity : AppCompatActivity() {
 
@@ -29,6 +33,7 @@ class ReportActivity : AppCompatActivity() {
     private lateinit var progress: ProgressBar
     private lateinit var generateButton: Button
     private lateinit var shareButton: Button
+    private lateinit var sharePdfButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +44,8 @@ class ReportActivity : AppCompatActivity() {
             return
         }
 
+        findViewById<TextView>(R.id.backButton).setOnClickListener { finish() }
+
         titleView = findViewById(R.id.reportTitle)
         urgentBanner = findViewById(R.id.urgentBanner)
         reportCard = findViewById(R.id.reportCard)
@@ -47,6 +54,7 @@ class ReportActivity : AppCompatActivity() {
         progress = findViewById(R.id.progressBar)
         generateButton = findViewById(R.id.generateButton)
         shareButton = findViewById(R.id.shareButton)
+        sharePdfButton = findViewById(R.id.sharePdfButton)
 
         titleView.text = phone
 
@@ -73,6 +81,10 @@ class ReportActivity : AppCompatActivity() {
             startActivity(Intent.createChooser(sendIntent, "Share with patient"))
         }
 
+        sharePdfButton.setOnClickListener { onSharePdf() }
+
+        findViewById<TextView>(R.id.clearButton).setOnClickListener { confirmClear() }
+
         setLoading(true)
         BackendApi.fetchReport(this, phone) { report, error ->
             setLoading(false)
@@ -95,6 +107,7 @@ class ReportActivity : AppCompatActivity() {
         body.text = formatReport(report)
         reportCard.visibility = View.VISIBLE
         shareButton.visibility = View.VISIBLE
+        sharePdfButton.visibility = View.VISIBLE
         status.text = ""
     }
 
@@ -123,6 +136,55 @@ class ReportActivity : AppCompatActivity() {
             "Please come in for a consultation when convenient, and bring this message."
         }
         return "Hi, thanks for sharing your symptoms. ${r.summaryForDoctor}\n\n$followUp"
+    }
+
+    private fun onSharePdf() {
+        sharePdfButton.isEnabled = false
+        BackendApi.downloadReportPdf(this, phone) { bytes, error ->
+            sharePdfButton.isEnabled = true
+            if (bytes == null) {
+                Snackbar.make(sharePdfButton, "Couldn't get PDF: ${error ?: "unknown error"}", Snackbar.LENGTH_LONG)
+                    .show()
+                return@downloadReportPdf
+            }
+            try {
+                val dir = File(cacheDir, "reports").apply { mkdirs() }
+                val safeName = phone.replace(Regex("[^A-Za-z0-9]+"), "_").ifBlank { "patient" }
+                val file = File(dir, "visit-summary-$safeName.pdf")
+                file.writeBytes(bytes)
+                val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "application/pdf"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                startActivity(Intent.createChooser(sendIntent, "Share PDF with patient"))
+            } catch (e: Exception) {
+                Snackbar.make(sharePdfButton, "Couldn't share PDF: ${e.message}", Snackbar.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun confirmClear() {
+        AlertDialog.Builder(this)
+            .setTitle("Clear this patient's data?")
+            .setMessage(
+                "This deletes their messages and report from the backend. It can't be undone, " +
+                    "and it doesn't touch anything in WhatsApp itself."
+            )
+            .setPositiveButton("Clear") { _, _ -> clearSession() }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun clearSession() {
+        BackendApi.deleteSession(this, phone) { ok, error ->
+            if (ok) {
+                finish()
+            } else {
+                Snackbar.make(shareButton, "Couldn't clear: ${error ?: "unknown error"}", Snackbar.LENGTH_LONG).show()
+            }
+        }
     }
 
     companion object {

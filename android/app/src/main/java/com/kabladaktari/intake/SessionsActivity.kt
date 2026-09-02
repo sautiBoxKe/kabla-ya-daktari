@@ -33,6 +33,12 @@ class SessionsActivity : AppCompatActivity() {
         progress = findViewById(R.id.progressBar)
 
         findViewById<View>(R.id.refreshButton).setOnClickListener { load() }
+        findViewById<View>(R.id.settingsButton).setOnClickListener {
+            startActivity(
+                Intent(this, MainActivity::class.java)
+                    .putExtra(MainActivity.EXTRA_FORCE_SETTINGS, true)
+            )
+        }
         otherToggle.setOnClickListener {
             otherExpanded = !otherExpanded
             renderOtherToggle()

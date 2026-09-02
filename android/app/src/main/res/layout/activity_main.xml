@@ -126,11 +126,13 @@
         </LinearLayout>
 
         <View
+            android:id="@+id/accessDivider"
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginTop="28dp"
             android:layout_marginBottom="20dp"
-            android:background="@color/line" />
+            android:background="@color/line"
+            android:visibility="gone" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/grantAccessButton"
@@ -140,7 +142,8 @@
             android:paddingTop="14dp"
             android:paddingBottom="14dp"
             android:text="Enable notification access"
-            android:textAllCaps="false" />
+            android:textAllCaps="false"
+            android:visibility="gone" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/viewSessionsButton"
@@ -150,8 +153,9 @@
             android:layout_marginTop="12dp"
             android:paddingTop="14dp"
             android:paddingBottom="14dp"
-            android:text="View patient sessions"
-            android:textAllCaps="false" />
+            android:text="Go to patient sessions"
+            android:textAllCaps="false"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/statusText"

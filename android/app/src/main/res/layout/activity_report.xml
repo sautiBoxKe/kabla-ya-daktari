@@ -12,6 +12,16 @@
         android:padding="24dp">
 
         <TextView
+            android:id="@+id/backButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:padding="4dp"
+            android:text="‹ All chats"
+            android:textColor="@color/primary"
+            android:textSize="14sp" />
+
+        <TextView
             android:id="@+id/reportTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -91,6 +101,29 @@
             android:text="Share with patient"
             android:textAllCaps="false"
             android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/sharePdfButton"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:text="Share as PDF"
+            android:textAllCaps="false"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/clearButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="28dp"
+            android:padding="4dp"
+            android:text="Clear this patient's data"
+            android:textColor="@color/error"
+            android:textSize="13sp" />
 
     </LinearLayout>
 

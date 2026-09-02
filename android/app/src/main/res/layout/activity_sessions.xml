@@ -37,6 +37,15 @@
         </LinearLayout>
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/settingsButton"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⚙"
+            android:textColor="@color/ink_mid"
+            android:textSize="20sp" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/refreshButton"
             style="@style/Widget.Material3.Button.IconButton"
             android:layout_width="wrap_content"

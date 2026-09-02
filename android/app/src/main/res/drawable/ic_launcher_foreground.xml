@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Simple mark: a white chat-bubble badge with an indigo "+" — a WhatsApp
+     chat becoming a medical brief, in one glyph. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- bubble body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M80,50 a26,26 0 1,0 -52,0 a26,26 0 1,0 52,0 z" />
+    <!-- bubble tail -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M40,72 L50,72 L36,85 Z" />
+    <!-- cross -->
+    <path
+        android:fillColor="#4F46E5"
+        android:pathData="M42,44 h24 v12 h-24 z M48,32 h12 v36 h-12 z" />
+</vector>

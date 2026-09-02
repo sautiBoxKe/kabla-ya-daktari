@@ -11,12 +11,24 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.snackbar.Snackbar
 
+/**
+ * Doubles as onboarding and settings. Once a password is saved AND
+ * notification access is granted, this screen is a dead end you'd never
+ * want to land on again — refreshUiState() skips straight to the sessions
+ * list instead. Pass EXTRA_FORCE_SETTINGS to actually see this screen when
+ * fully set up (e.g. from a "Settings" link elsewhere).
+ */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var urlField: EditText
     private lateinit var tokenField: EditText
     private lateinit var statusText: TextView
     private lateinit var saveButton: Button
+    private lateinit var accessDivider: View
+    private lateinit var grantAccessButton: Button
+    private lateinit var viewSessionsButton: Button
+
+    private val forceSettings: Boolean by lazy { intent.getBooleanExtra(EXTRA_FORCE_SETTINGS, false) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,6 +38,9 @@ class MainActivity : AppCompatActivity() {
         tokenField = findViewById(R.id.tokenField)
         statusText = findViewById(R.id.statusText)
         saveButton = findViewById(R.id.saveButton)
+        accessDivider = findViewById(R.id.accessDivider)
+        grantAccessButton = findViewById(R.id.grantAccessButton)
+        viewSessionsButton = findViewById(R.id.viewSessionsButton)
         val advancedSection = findViewById<LinearLayout>(R.id.advancedSection)
         val advancedToggle = findViewById<TextView>(R.id.advancedToggle)
 
@@ -44,19 +59,20 @@ class MainActivity : AppCompatActivity() {
 
         saveButton.setOnClickListener { onContinue() }
 
-        findViewById<Button>(R.id.grantAccessButton).setOnClickListener {
+        grantAccessButton.setOnClickListener {
             startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
         }
 
-        findViewById<Button>(R.id.viewSessionsButton).setOnClickListener {
+        viewSessionsButton.setOnClickListener {
             startActivity(Intent(this, SessionsActivity::class.java))
         }
     }
 
     override fun onResume() {
         super.onResume()
-        // Picks up a just-granted notification permission without needing a restart.
-        refreshStatus()
+        // Covers the initial load AND coming back from the system notification
+        // settings screen with access just granted — no restart needed either way.
+        refreshUiState()
     }
 
     private fun onContinue() {
@@ -67,24 +83,39 @@ class MainActivity : AppCompatActivity() {
         }
         IntakeConfig.save(this, urlField.text.toString().trim(), password)
 
-        if (isNotificationAccessGranted()) {
-            Snackbar.make(saveButton, "Saved — ready to go", Snackbar.LENGTH_LONG)
-                .setAction("View sessions") {
-                    startActivity(Intent(this, SessionsActivity::class.java))
-                }
-                .show()
-        } else {
+        if (!isNotificationAccessGranted()) {
             Snackbar.make(saveButton, "Saved. Now enable notification access.", Snackbar.LENGTH_LONG)
                 .setAction("Enable") {
                     startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
                 }
                 .show()
         }
-        refreshStatus()
+        // If access is already granted, refreshUiState() below logs the doctor
+        // straight into the sessions list instead of stalling on a Snackbar.
+        refreshUiState()
     }
 
-    private fun refreshStatus() {
-        statusText.text = if (isNotificationAccessGranted()) {
+    /** Single source of truth for what this screen shows, given saved state. */
+    private fun refreshUiState() {
+        val hasPassword = IntakeConfig.getToken(this).isNotBlank()
+        val granted = isNotificationAccessGranted()
+
+        if (hasPassword && granted && !forceSettings) {
+            startActivity(Intent(this, SessionsActivity::class.java))
+            finish()
+            return
+        }
+
+        grantAccessButton.visibility = if (!granted) View.VISIBLE else View.GONE
+        viewSessionsButton.visibility = if (forceSettings && hasPassword && granted) View.VISIBLE else View.GONE
+        accessDivider.visibility =
+            if (grantAccessButton.visibility == View.VISIBLE || viewSessionsButton.visibility == View.VISIBLE) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+
+        statusText.text = if (granted) {
             "Notification access: granted — this phone is listening for WhatsApp messages."
         } else {
             "Notification access: NOT granted yet. Tap 'Enable notification access' and " +
@@ -95,5 +126,9 @@ class MainActivity : AppCompatActivity() {
     private fun isNotificationAccessGranted(): Boolean {
         val enabled = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
         return enabled != null && enabled.contains(packageName)
+    }
+
+    companion object {
+        const val EXTRA_FORCE_SETTINGS = "force_settings"
     }
 }

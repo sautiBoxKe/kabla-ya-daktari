@@ -146,6 +146,40 @@ object BackendApi {
         }
     }
 
+    fun deleteSession(context: Context, phone: String, onResult: (Boolean, String?) -> Unit) {
+        request(context, "DELETE", "/session/${encodePathSegment(phone)}") { obj, _, error ->
+            onResult(error == null && obj != null, error)
+        }
+    }
+
+    /** Raw PDF bytes — separate from request() above since the response isn't JSON. */
+    fun downloadReportPdf(context: Context, phone: String, onResult: (ByteArray?, String?) -> Unit) {
+        executor.execute {
+            val backendUrl = IntakeConfig.getBackendUrl(context)
+            val token = IntakeConfig.getToken(context)
+            try {
+                val url = URL("$backendUrl/report/${encodePathSegment(phone)}/pdf")
+                val conn = url.openConnection() as HttpURLConnection
+                conn.requestMethod = "GET"
+                if (token.isNotEmpty()) conn.setRequestProperty("X-Intake-Token", token)
+                conn.connectTimeout = 8000
+                conn.readTimeout = 20000
+
+                val code = conn.responseCode
+                if (code !in 200..299) {
+                    mainHandler.post { onResult(null, "HTTP $code") }
+                    conn.disconnect()
+                    return@execute
+                }
+                val bytes = conn.inputStream.use { it.readBytes() }
+                conn.disconnect()
+                mainHandler.post { onResult(bytes, null) }
+            } catch (e: Exception) {
+                mainHandler.post { onResult(null, e.message ?: "Network error") }
+            }
+        }
+    }
+
     // URLEncoder is form-encoding (space -> "+"), but this is a URL *path*
     // segment, not a query string — the backend won't decode "+" back to a
     // space. Swap it for a literal %20 after encoding everything else.
