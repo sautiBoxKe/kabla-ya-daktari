@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.KablaIntake" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/surface</item>
+        <item name="colorPrimaryContainer">@color/primary_soft</item>
+        <item name="colorOnPrimaryContainer">@color/primary_dark</item>
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorOnSecondary">@color/surface</item>
+        <item name="android:colorBackground">@color/canvas</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/ink</item>
+        <item name="colorOnBackground">@color/ink</item>
+        <item name="colorSurfaceVariant">@color/surface_sub</item>
+        <item name="colorOnSurfaceVariant">@color/ink_mid</item>
+        <item name="colorOutline">@color/line</item>
+        <item name="colorError">@color/error</item>
+        <item name="colorErrorContainer">@color/error_soft</item>
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.KablaIntake.Small</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.KablaIntake.Medium</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.KablaIntake.Large</item>
+    </style>
+
+    <style name="ShapeAppearance.KablaIntake.Small" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerSize">12dp</item>
+    </style>
+
+    <style name="ShapeAppearance.KablaIntake.Medium" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerSize">14dp</item>
+    </style>
+
+    <style name="ShapeAppearance.KablaIntake.Large" parent="ShapeAppearance.Material3.Corner.Large">
+        <item name="cornerSize">20dp</item>
+    </style>
+
+</resources>

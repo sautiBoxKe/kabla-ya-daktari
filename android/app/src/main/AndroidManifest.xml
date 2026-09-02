@@ -7,7 +7,8 @@
     <application
         android:allowBackup="false"
         android:label="Kabla ya Daktari Intake"
-        android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
+        android:usesCleartextTraffic="true"
+        android:theme="@style/Theme.KablaIntake">
 
         <activity
             android:name=".MainActivity"
@@ -17,6 +18,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity android:name=".SessionsActivity" android:exported="false" />
+        <activity android:name=".ReportActivity" android:exported="false" />
 
         <service
             android:name=".WhatsAppNotificationListener"

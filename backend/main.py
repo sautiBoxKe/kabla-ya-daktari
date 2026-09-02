@@ -23,7 +23,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from claude_report import generate_report
+from claude_report import classify_is_medical, generate_report
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -59,7 +59,7 @@ def _check_token(x_intake_token: Optional[str]) -> None:
 
 
 def _get_session(phone: str) -> dict:
-    return SESSIONS.setdefault(phone, {"messages": [], "report": None})
+    return SESSIONS.setdefault(phone, {"messages": [], "report": None, "is_medical": None})
 
 
 @app.get("/")
@@ -79,6 +79,7 @@ def post_message(msg: IncomingMessage, x_intake_token: Optional[str] = Header(de
         }
     )
     session["report"] = None  # new message invalidates any prior report
+    session["is_medical"] = classify_is_medical(session["messages"])
     return {"ok": True, "phone": msg.phone, "message_count": len(session["messages"])}
 
 
@@ -89,6 +90,8 @@ def list_sessions():
             "phone": phone,
             "message_count": len(s["messages"]),
             "has_report": s["report"] is not None,
+            "is_medical": s.get("is_medical"),
+            "urgent": (s["report"] or {}).get("urgent") if s["report"] else None,
         }
         for phone, s in SESSIONS.items()
     ]

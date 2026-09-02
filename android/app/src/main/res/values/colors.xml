@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Warm-cream / indigo palette, in the spirit of the NPCU member-portal tokens. -->
+    <color name="canvas">#F4F1EC</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_sub">#FAF9F6</color>
+    <color name="ink">#1B1A24</color>
+    <color name="ink_mid">#56515F</color>
+    <color name="ink_mute">#6C6878</color>
+    <color name="primary">#4F46E5</color>
+    <color name="primary_dark">#4338CA</color>
+    <color name="primary_soft">#ECECFF</color>
+    <color name="accent">#C8922E</color>
+    <color name="line">#E6E1D9</color>
+    <color name="error">#A33D49</color>
+    <color name="error_soft">#F8E9EB</color>
+    <color name="positive">#1A8F5A</color>
+    <color name="positive_soft">#E7F5EF</color>
+</resources>

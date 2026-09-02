@@ -12,10 +12,10 @@ object IntakeConfig {
     private const val KEY_BACKEND_URL = "backend_url"
     private const val KEY_TOKEN = "shared_token"
 
-    // Change these defaults to match your machine's IP on the venue wifi,
-    // e.g. http://192.168.1.42:8000 — "localhost" only works in an emulator
-    // pointed at your own laptop.
-    private const val DEFAULT_BACKEND_URL = "http://10.0.2.2:8000"
+    // Points at the deployed backend by default so setup is just "set a
+    // password" — override under Advanced settings only for local/USB demos
+    // (e.g. http://127.0.0.1:8000 via `adb reverse tcp:8000 tcp:8000`).
+    const val DEFAULT_BACKEND_URL = "https://kabla-ya-daktari-backend.onrender.com"
 
     fun getBackendUrl(context: Context): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

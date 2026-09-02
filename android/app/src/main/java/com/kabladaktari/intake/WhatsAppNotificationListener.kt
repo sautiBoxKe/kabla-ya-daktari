@@ -31,6 +31,13 @@ class WhatsAppNotificationListener : NotificationListenerService() {
     companion object {
         private const val TAG = "KablaIntakeListener"
         private val WHATSAPP_PACKAGES = setOf("com.whatsapp", "com.whatsapp.w4b")
+
+        // WhatsApp reposts/updates the same notification (e.g. when it gets
+        // folded into a conversation summary), firing onNotificationPosted more
+        // than once for one message. Drop exact title+text repeats seen within
+        // this window rather than forwarding the same patient message twice.
+        private const val DEDUP_WINDOW_MS = 3000L
+        private val recentlySeen = mutableMapOf<String, Long>()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
@@ -44,6 +51,17 @@ class WhatsAppNotificationListener : NotificationListenerService() {
         // WhatsApp's own "message sent" / summary notifications have no useful title/text pair;
         // skip anything that looks like a group summary line with no real sender.
         if (title == "WhatsApp") return
+
+        val key = "$title|$text"
+        val now = System.currentTimeMillis()
+        synchronized(recentlySeen) {
+            val last = recentlySeen[key]
+            if (last != null && now - last < DEDUP_WINDOW_MS) return
+            recentlySeen[key] = now
+            if (recentlySeen.size > 200) {
+                recentlySeen.entries.removeAll { now - it.value > DEDUP_WINDOW_MS }
+            }
+        }
 
         executor.execute { postMessage(title, text) }
     }

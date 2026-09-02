@@ -108,6 +108,41 @@ def _extract_json(raw: str) -> dict[str, Any]:
     return json.loads(raw)
 
 
+def classify_is_medical(messages: list[dict[str, Any]]) -> bool:
+    """Cheap yes/no classification: is this transcript a patient describing a
+    health concern to the clinic, or unrelated chat the notification listener
+    happened to also pick up? Keeps the doctor's session list focused on real
+    intake conversations instead of every WhatsApp thread on the phone."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    text = " ".join(m.get("text", "") for m in messages).lower()
+
+    if not api_key:
+        keywords = [
+            "pain", "fever", "sick", "hurt", "daktari", "doctor", "symptom",
+            "medicine", "hospital", "clinic", "bleeding", "cough", "headache",
+            "vomit", "dizzy", "swollen", "rash", "injury", "wound",
+        ]
+        return any(kw in text for kw in keywords)
+
+    client = Anthropic(api_key=api_key)
+    model = os.environ.get("CLAUDE_MODEL", "").strip() or CLAUDE_MODEL_DEFAULT
+    transcript = _transcript_to_text(messages)
+    resp = client.messages.create(
+        model=model,
+        max_tokens=5,
+        system=(
+            "Answer with exactly one word, YES or NO. Is this WhatsApp chat a "
+            "patient describing a symptom, illness, or health concern to a "
+            "clinic intake line — as opposed to an unrelated personal or "
+            "social conversation the phone's notification listener also "
+            "happened to pick up?"
+        ),
+        messages=[{"role": "user", "content": f"Transcript:\n{transcript}"}],
+    )
+    raw = "".join(block.text for block in resp.content if block.type == "text").strip().upper()
+    return raw.startswith("Y")
+
+
 def generate_report(messages: list[dict[str, Any]]) -> dict[str, Any]:
     """messages: list of {"text": str, "ts": str, "from_clinic": bool}."""
     api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
