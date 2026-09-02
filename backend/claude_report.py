@@ -41,26 +41,35 @@ Hard rules — these are safety-critical, not stylistic preferences:
    should seek in-person or emergency care immediately. Do not try to judge how \
    urgent beyond that binary; when unsure, set urgent true.
 5. Only include information the patient (or whoever is texting on their behalf) \
-   actually stated. Never invent vitals, durations, or history that weren't mentioned. \
-   If a field has no information, use an empty list/string — do not guess.
+   actually stated. Never invent vitals, durations, history, severity, or negatives \
+   that weren't mentioned. If a field has no information, use an empty list/string — \
+   do not guess. "severity" and "pertinent_negatives" below are still just reported \
+   facts, not your clinical judgment — record only what the patient said, don't infer.
 6. Write for a busy clinician: short, factual, no filler, no bedside-manner language.
 7. This is always a support summary for a licensed clinician to verify against the \
    patient in person — never the final word.
 
 Respond with ONLY a single valid JSON object, no markdown fences, no prose before or \
-after, matching exactly this schema:
+after, matching exactly this schema. Structure this like a real pre-consult chart —  \
+distinct fields the clinician can scan, not a wall of prose. Leave any field the \
+patient didn't address as an empty string/list rather than guessing:
 
 {
+  "age": "string, patient's stated age, empty if unstated",
+  "sex": "string, patient's stated sex/gender, empty if unstated",
   "chief_complaint": "string, one line",
   "duration": "string, e.g. '3 days' or 'since this morning', empty string if unstated",
+  "severity": "string, the patient's own words for how bad it is, e.g. 'mild', 'severe', '7/10' — empty if unstated",
   "symptoms": ["string", "..."],
+  "pertinent_negatives": ["string", "... symptoms the patient explicitly said they DON'T have, e.g. 'no fever', 'no vomiting' — empty list if none stated"],
   "self_reported_vitals": {"temperature": "string or empty", "other": "string or empty"},
   "current_medications": ["string", "..."],
   "allergies": ["string", "..."],
-  "relevant_history": ["string", "... (e.g. pregnant, diabetic, asthmatic, age if stated)"],
+  "relevant_history": ["string", "... chronic conditions, pregnancy, prior relevant history"],
+  "social_history": ["string", "... smoking, alcohol, occupation-related exposure, pregnancy status if explicitly stated — empty list if none stated"],
   "red_flags": ["string", "... specific phrases that triggered concern, empty list if none"],
   "urgent": true or false,
-  "summary_for_doctor": "string, 2-4 sentences, factual synthesis",
+  "summary_for_doctor": "string, ONE short factual sentence synthesizing the case — the structured fields above already carry the detail, don't repeat them",
   "disclaimer": "AI-generated summary from patient-reported chat only. Not a diagnosis. Clinician must verify directly with the patient."
 }
 """
@@ -83,13 +92,18 @@ def _mock_report(messages: list[dict[str, Any]]) -> dict[str, Any]:
         for kw in ["chest pain", "can't breathe", "cannot breathe", "bleeding a lot", "unconscious"]
     )
     return {
+        "age": "",
+        "sex": "",
         "chief_complaint": "[MOCK — set ANTHROPIC_API_KEY for a real report]",
         "duration": "",
+        "severity": "",
         "symptoms": [m.get("text", "") for m in messages if not m.get("from_clinic")][:5],
+        "pertinent_negatives": [],
         "self_reported_vitals": {"temperature": "", "other": ""},
         "current_medications": [],
         "allergies": [],
         "relevant_history": [],
+        "social_history": [],
         "red_flags": ["mock mode — not evaluated"] if urgent else [],
         "urgent": urgent,
         "summary_for_doctor": "This is a mock report because no ANTHROPIC_API_KEY is configured. "
@@ -163,13 +177,18 @@ def generate_report(messages: list[dict[str, Any]]) -> dict[str, Any]:
             report = _extract_json(raw)
         except (json.JSONDecodeError, ValueError):
             report = {
+                "age": "",
+                "sex": "",
                 "chief_complaint": "[PARSE ERROR — see raw_response]",
                 "duration": "",
+                "severity": "",
                 "symptoms": [],
+                "pertinent_negatives": [],
                 "self_reported_vitals": {"temperature": "", "other": ""},
                 "current_medications": [],
                 "allergies": [],
                 "relevant_history": [],
+                "social_history": [],
                 "red_flags": [],
                 "urgent": True,
                 "summary_for_doctor": "The model response could not be parsed as JSON. "
