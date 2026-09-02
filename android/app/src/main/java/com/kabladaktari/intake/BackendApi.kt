@@ -20,14 +20,19 @@ data class SessionSummary(
 )
 
 data class Report(
+    val age: String,
+    val sex: String,
     val chiefComplaint: String,
     val duration: String,
+    val severity: String,
     val symptoms: List<String>,
+    val pertinentNegatives: List<String>,
     val vitalsTemperature: String,
     val vitalsOther: String,
     val medications: List<String>,
     val allergies: List<String>,
     val history: List<String>,
+    val socialHistory: List<String>,
     val redFlags: List<String>,
     val urgent: Boolean,
     val summaryForDoctor: String,
@@ -41,14 +46,19 @@ data class Report(
             }
             val vitals = json.optJSONObject("self_reported_vitals") ?: JSONObject()
             return Report(
+                age = json.optString("age"),
+                sex = json.optString("sex"),
                 chiefComplaint = json.optString("chief_complaint"),
                 duration = json.optString("duration"),
+                severity = json.optString("severity"),
                 symptoms = strList("symptoms"),
+                pertinentNegatives = strList("pertinent_negatives"),
                 vitalsTemperature = vitals.optString("temperature"),
                 vitalsOther = vitals.optString("other"),
                 medications = strList("current_medications"),
                 allergies = strList("allergies"),
                 history = strList("relevant_history"),
+                socialHistory = strList("social_history"),
                 redFlags = strList("red_flags"),
                 urgent = json.optBoolean("urgent", false),
                 summaryForDoctor = json.optString("summary_for_doctor"),

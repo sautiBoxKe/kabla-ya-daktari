@@ -127,22 +127,60 @@ class ReportActivity : AppCompatActivity() {
         status.text = ""
     }
 
-    private fun formatReport(r: Report): String {
-        fun join(items: List<String>) = items.joinToString(", ").ifBlank { "—" }
-        val vitals = listOf(r.vitalsTemperature, r.vitalsOther).filter { it.isNotBlank() }.joinToString(", ")
+    // Chart-style: only sections the patient actually addressed get shown —
+    // no "—" placeholders cluttering a short chat's worth of intake.
+    private fun formatReport(r: Report): String = buildString {
+        val demographics = listOfNotNull(
+            r.age.takeIf { it.isNotBlank() }?.let { "$it y/o" },
+            r.sex.takeIf { it.isNotBlank() },
+        ).joinToString(", ")
+        if (demographics.isNotBlank()) append(demographics).append("\n\n")
 
-        return buildString {
-            append("Chief complaint: ${r.chiefComplaint.ifBlank { "—" }}\n")
-            append("Duration: ${r.duration.ifBlank { "—" }}\n\n")
-            append("Symptoms: ${join(r.symptoms)}\n")
-            append("Self-reported vitals: ${vitals.ifBlank { "—" }}\n")
-            append("Current medications: ${join(r.medications)}\n")
-            append("Allergies: ${join(r.allergies)}\n")
-            append("Relevant history: ${join(r.history)}\n\n")
-            append("Red flags: ${if (r.redFlags.isEmpty()) "None reported" else join(r.redFlags)}\n\n")
-            append("Summary for doctor:\n${r.summaryForDoctor}\n\n")
-            append(r.disclaimer)
+        append("CHIEF COMPLAINT\n")
+        append(r.chiefComplaint.ifBlank { "Not stated" }).append("\n\n")
+
+        val hpiLine = listOfNotNull(
+            r.duration.takeIf { it.isNotBlank() }?.let { "Duration: $it" },
+            r.severity.takeIf { it.isNotBlank() }?.let { "Severity: $it" },
+        ).joinToString("  ·  ")
+        if (hpiLine.isNotBlank() || r.symptoms.isNotEmpty()) {
+            append("HISTORY OF PRESENT ILLNESS\n")
+            if (hpiLine.isNotBlank()) append(hpiLine).append("\n")
+            if (r.symptoms.isNotEmpty()) append("Symptoms: ${r.symptoms.joinToString(", ")}\n")
+            append("\n")
         }
+
+        if (r.pertinentNegatives.isNotEmpty()) {
+            append("PERTINENT NEGATIVES\n")
+            append(r.pertinentNegatives.joinToString(", ")).append("\n\n")
+        }
+
+        val vitals = listOf(r.vitalsTemperature, r.vitalsOther).filter { it.isNotBlank() }.joinToString(", ")
+        if (vitals.isNotBlank()) {
+            append("SELF-REPORTED VITALS\n").append(vitals).append("\n\n")
+        }
+
+        if (r.medications.isNotEmpty()) {
+            append("CURRENT MEDICATIONS\n").append(r.medications.joinToString(", ")).append("\n\n")
+        }
+
+        if (r.allergies.isNotEmpty()) {
+            append("ALLERGIES\n").append(r.allergies.joinToString(", ")).append("\n\n")
+        }
+
+        if (r.history.isNotEmpty()) {
+            append("PAST MEDICAL HISTORY\n").append(r.history.joinToString(", ")).append("\n\n")
+        }
+
+        if (r.socialHistory.isNotEmpty()) {
+            append("SOCIAL HISTORY\n").append(r.socialHistory.joinToString(", ")).append("\n\n")
+        }
+
+        append("RED FLAGS\n")
+        append(if (r.redFlags.isEmpty()) "None reported" else r.redFlags.joinToString(", ")).append("\n\n")
+
+        append("SUMMARY\n").append(r.summaryForDoctor).append("\n\n")
+        append(r.disclaimer)
     }
 
     private fun buildShareText(r: Report): String {
