@@ -9,6 +9,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.snackbar.Snackbar
 
 /**
@@ -43,6 +44,12 @@ class MainActivity : AppCompatActivity() {
         viewSessionsButton = findViewById(R.id.viewSessionsButton)
         val advancedSection = findViewById<LinearLayout>(R.id.advancedSection)
         val advancedToggle = findViewById<TextView>(R.id.advancedToggle)
+        val requireAuthSwitch = findViewById<MaterialSwitch>(R.id.requireAuthSwitch)
+
+        requireAuthSwitch.isChecked = IntakeConfig.getRequireAuth(this)
+        requireAuthSwitch.setOnCheckedChangeListener { _, checked ->
+            IntakeConfig.setRequireAuth(this, checked)
+        }
 
         urlField.setText(IntakeConfig.getBackendUrl(this))
         tokenField.setText(IntakeConfig.getToken(this))
@@ -64,7 +71,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewSessionsButton.setOnClickListener {
-            startActivity(Intent(this, SessionsActivity::class.java))
+            startActivity(Intent(this, LockActivity::class.java))
         }
     }
 
@@ -101,7 +108,7 @@ class MainActivity : AppCompatActivity() {
         val granted = isNotificationAccessGranted()
 
         if (hasPassword && granted && !forceSettings) {
-            startActivity(Intent(this, SessionsActivity::class.java))
+            startActivity(Intent(this, LockActivity::class.java))
             finish()
             return
         }

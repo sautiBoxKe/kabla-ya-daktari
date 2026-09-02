@@ -11,6 +11,7 @@ object IntakeConfig {
     private const val PREFS = "kabla_intake_prefs"
     private const val KEY_BACKEND_URL = "backend_url"
     private const val KEY_TOKEN = "shared_token"
+    private const val KEY_REQUIRE_AUTH = "require_auth"
 
     // Points at the deployed backend by default so setup is just "set a
     // password" — override under Advanced settings only for local/USB demos
@@ -29,6 +30,15 @@ object IntakeConfig {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putString(KEY_BACKEND_URL, backendUrl)
             .putString(KEY_TOKEN, token)
+            .apply()
+    }
+
+    fun getRequireAuth(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_REQUIRE_AUTH, false)
+
+    fun setRequireAuth(context: Context, required: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_REQUIRE_AUTH, required)
             .apply()
     }
 }
